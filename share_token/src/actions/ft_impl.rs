@@ -7,7 +7,7 @@ impl FungibleTokenCore for Contract {
         let sender = env::predecessor_account_id();
         self.update_user_rps(&sender);
         self.update_user_rps(&receiver_id);
-        self.emit_receiver_nft_events(&sender);
+        self.emit_receiver_nft_events(&receiver_id);
         self.ft_functionality
             .ft_transfer(receiver_id.clone(), amount, memo);
         self.emit_sender_nft_events(&sender);
@@ -24,7 +24,7 @@ impl FungibleTokenCore for Contract {
       let sender = env::predecessor_account_id();
         self.update_user_rps(&sender);
         self.update_user_rps(&receiver_id);
-        self.emit_receiver_nft_events(&sender);
+        self.emit_receiver_nft_events(&receiver_id);
         let promise = self.ft_functionality
             .ft_transfer_call(receiver_id, amount, memo, msg);
         self.emit_sender_nft_events(&sender);

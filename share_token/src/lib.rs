@@ -62,6 +62,7 @@ pub enum StorageKey {
     AccontRps,
     FungibleTokenMetadata,
     NonFungibleTokenMetadata,
+    InstanceNonFungibleTokenMetadata,
 }
 
 #[allow(dead_code)]
@@ -92,7 +93,7 @@ impl Contract {
                 Some(&nft_contract_metadata),
             ),
             nft_instance_metadata: LazyOption::new(
-                StorageKey::NonFungibleTokenMetadata,
+                StorageKey::InstanceNonFungibleTokenMetadata,
                 Some(&nft_instance_metadata),
             ),
         };
@@ -106,6 +107,11 @@ impl Contract {
             memo: Some("Single Mint event on creation"),
         }
         .emit();
+        NftMint {
+            owner_id: &owner_id,
+            token_ids: &["0"],
+            memo: Some("received first shares")
+        }.emit();
 
         this
     }
@@ -134,7 +140,7 @@ impl Contract {
                 authorized_id: None,
                 memo: Some("transferred all shares")
             }.emit()
-        } 
+        }
     }
 
     pub fn emit_receiver_nft_events(&self, account_id: &AccountId) {
@@ -144,7 +150,7 @@ impl Contract {
                 token_ids: &["0"],
                 memo: Some("received first shares")
             }.emit()
-        } 
+        }
     }
 
 }

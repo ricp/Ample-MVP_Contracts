@@ -135,7 +135,12 @@ impl NonFungibleTokenEnumeration for Contract {
             token_id: "0".to_string(),
             owner_id: env::current_account_id(),
             metadata: Some(TokenMetadata {
-                title: Some(token_data.title),
+                title: Some(format!(
+                    "{}. {}/{}",
+                    token_data.title,
+                    self.ft_functionality.ft_balance_of(account_id.clone()).0,
+                    self.ft_functionality.ft_total_supply().0
+                )),
                 description: Some(format!(
                     "{}. {}/{}",
                     token_data.description,
@@ -200,10 +205,10 @@ impl NonFungibleTokenApproval for Contract {
         &self,
         token_id: TokenId,
         approved_account_id: AccountId,
-        approval_id: Option<u64>
-      ) -> bool {
+        approval_id: Option<u64>,
+    ) -> bool {
         false
-      }
+    }
 }
 
 #[near_bindgen]
