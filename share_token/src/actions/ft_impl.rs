@@ -1,3 +1,14 @@
+//! Implementation of NEP-141 interface (fungible token)
+//! 
+//! Utilizes standard routing of blockchain exposed methods to internal
+//! methods of ft_functionality.
+//! 
+//! ft_transfer and ft_transfer_call also call update_user_rps to ensure
+//! correct rewards distribution before any balance modification.
+//! 
+//! ft_transfer and ft_transfer_call also call emit_receiver_nft_events
+//! and emit_sender_nft_events to enforce events for NEP-171 standard
+
 use crate::*;
 
 #[near_bindgen]

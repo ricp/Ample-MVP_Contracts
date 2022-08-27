@@ -1,1 +1,0 @@
-pub const ERR_001_MIN_AMT: &str = "Needs to deposit at least minimum deposit amount";

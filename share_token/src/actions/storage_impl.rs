@@ -1,3 +1,9 @@
+//! Implementation of NEP-145 interface (storage cost methods)
+//!
+//! Does not allow force option on storage unregister to avoid
+//! loss of funds. User must first withdraw rewards and transfer
+//! their shares to then unregister.
+
 use crate::*;
 
 use near_contract_standards::storage_management::{
@@ -16,6 +22,7 @@ impl StorageManagement for Contract {
         account_id: Option<AccountId>,
         registration_only: Option<bool>,
     ) -> StorageBalance {
+        log!(env::storage_usage().to_string());
         let amount = env::attached_deposit();
         let account_id = account_id
             .map(|a| a.into())
@@ -23,7 +30,10 @@ impl StorageManagement for Contract {
         let min_balance = self.storage_balance_bounds().min.0;
         let already_registered = self.accounts_rps.contains_key(&account_id);
         if amount < min_balance {
-            panic!("{}", ERR_001_MIN_AMT);
+            panic!(
+                "Needs to deposit at least minimum deposit amount: {}",
+                min_balance
+            );
         }
 
         // Registration only setups the account but doesn't leave space for tokens.
@@ -39,6 +49,7 @@ impl StorageManagement for Contract {
                 Promise::new(env::predecessor_account_id()).transfer(refund);
             }
         }
+        log!(env::storage_usage().to_string());
         self.storage_balance_of(account_id).unwrap()
     }
 
