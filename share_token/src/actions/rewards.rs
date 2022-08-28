@@ -55,8 +55,6 @@ impl Contract {
 #[cfg(test)]
 mod tests {
 
-    use near_sdk::PromiseResult;
-
     use super::*;
     use crate::tests::*;
 
@@ -64,7 +62,7 @@ mod tests {
     /// Test claim_rewards method
     /// ASSERT:
     /// (1) Call requires 1 yocto
-    #[should_panic(expected = "Requires attached deposit of exactly 1 yoctoNEAR")]
+    #[should_panic = "Requires attached deposit of exactly 1 yoctoNEAR"]
     #[case(0, 0)]
     /// (2) Changes caller internal reward balance to 0
     /// (3) Emits promise with callback in case there are
@@ -146,7 +144,7 @@ mod tests {
     /// (1) Method only allows contract to call it
     /// ***Assertion can't currently be made because of
     ///    flaw in #[private] macro in mocked context
-    // #[should_panic(expected = "Method resolve_reward_transfer is private")]
+    // #[should_panic = "Method resolve_reward_transfer is private"]
     // #[case(OWNER_ACCOUNT.parse().unwrap(), false, 100)]
     /// (2) If promise succeeded does nothing
     #[case(CONTRACT_ACCOUNT.parse().unwrap(), true, 100)]

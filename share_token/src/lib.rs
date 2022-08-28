@@ -283,7 +283,7 @@ mod tests {
     pub use near_sdk::serde_json::{self, json};
     pub use near_sdk::test_utils::{get_created_receipts, get_logs};
     pub use near_sdk::{testing_env, Balance, Gas, MockedBlockchain, VMContext};
-    pub use near_sdk::{RuntimeFeesConfig, VMConfig};
+    pub use near_sdk::{RuntimeFeesConfig, VMConfig, PromiseResult};
 
     pub use rstest::{fixture, rstest};
 

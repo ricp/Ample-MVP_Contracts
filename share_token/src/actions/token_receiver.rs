@@ -1,5 +1,5 @@
 //! token_receiver module
-//! 
+//!
 //! Implements NEP-141 ft_on_transfer method to handle receival of
 //! tokens by the contract.
 
@@ -21,10 +21,60 @@ impl Contract {
             "deposit_profits" => {
                 let total_reward_tokens = self.reward_tokens_all_time_count.0 + amount.0;
                 self.reward_tokens_all_time_count = U128(total_reward_tokens);
-                self.contract_rps = U128(total_reward_tokens / self.ft_functionality.ft_total_supply().0);
+                self.contract_rps =
+                    U128(total_reward_tokens / self.ft_functionality.ft_total_supply().0);
                 U128(0)
             }
             _ => panic!("Invalid msg param"),
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    use crate::tests::*;
+
+    #[rstest]
+    /// Test ft_on_transfer method
+    /// ASSERT:
+    /// (1) Method only accepts reward token as predecessor
+    #[should_panic = "Invalid reward token, can only tranfer token:"]
+    #[case(OWNER_ACCOUNT.parse().unwrap(), 10)]
+    /// (2) If deposited amount cannot be divided by total
+    ///     supply of share tokens, don't immediatelly distribute
+    #[case(REWARDS_TOKEN_ACCOUNT.parse().unwrap(), TOKEN_SUPPLY.0 - 1)]
+    /// (3) Tokens get proportionally distributed between all holders
+    #[case(REWARDS_TOKEN_ACCOUNT.parse().unwrap(), TOKEN_SUPPLY.0)]
+    fn test_ft_on_transfer(#[case] predecessor: AccountId, #[case] deposit_value: u128) {
+        // setup
+        let context = get_context(vec![], 0, 0, predecessor, 0, Gas(200u64 * 10u64.pow(12)));
+        testing_env!(context);
+        let mut contract = init_contract(1);
+
+        // call tested method
+        contract.ft_on_transfer(
+            OWNER_ACCOUNT.parse().unwrap(),
+            U128(deposit_value),
+            "deposit_profits".to_string(),
+        );
+
+        // perform assertions
+        let mut rps_manager = contract
+            .accounts_rps
+            .get(&OWNER_ACCOUNT.parse::<AccountId>().unwrap())
+            .unwrap();
+
+        rps_manager.update_rps(contract.contract_rps.0, TOKEN_SUPPLY.0);
+
+        let rewards_balance = rps_manager.rewards_balance;
+
+        if deposit_value >= TOKEN_SUPPLY.0 {
+            assert_eq!(rewards_balance, TOKEN_SUPPLY);
+        } else {
+            assert_eq!(rewards_balance.0, 0);
+        }
+    }
+
 }
