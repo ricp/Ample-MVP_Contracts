@@ -5,6 +5,7 @@
 
 use crate::*;
 
+#[near_bindgen]
 impl Contract {
     /// Allows the transfer of the reward token to the contract and its immediate
     /// distribution among share owners in the proportion of their ownership

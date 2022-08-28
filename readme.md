@@ -10,8 +10,8 @@ also shows up as an NFT in the owner's NEAR wallet.
 
 ### Requirements
 To deploy the contract you must install node.js and the near cli.
-Node.js: [Installation Instructions](https://nodejs.org/en/)
-near-cli: [Installation Instructions](https://docs.near.org/tools/near-cli)
+- Node.js: [Installation Instructions](https://nodejs.org/en/)
+- near-cli: [Installation Instructions](https://docs.near.org/tools/near-cli)
 
 To deploy the application on mainnet you need to set an environment variable:
 ```
@@ -46,7 +46,7 @@ After the contract has been initialized there is no way to change these variable
 Substitute all values between <> for the actual selected values:
 
 ```
-near deploy --accountId <deploy_account_id> --wasmFile target/wasm32-unknown-unknown/release/share_nft_token.wams --initFunction new --initArgs '{"owner_id": "<owner_id>", "total_supply": "<total_supply>", "reward_token": "<reward_token>", "token_name": "<token_name>", "token_symbol": "<token_symbol>", "token_icon": "<token_icon>", "token_reference": "<token_reference>", "nft_instance_name": "<nft_instance_name>", "nft_instance_description": "<nft_instance_description>", "nft_instance_media_url": "<nft_instance_media_url>"}'
+near deploy --accountId <deploy_account_id> --wasmFile target/wasm32-unknown-unknown/release/share_nft_token.wasm --initFunction new --initArgs '{"owner_id": "<owner_id>", "total_supply": "<total_supply>", "reward_token": "<reward_token>", "token_name": "<token_name>", "token_symbol": "<token_symbol>", "token_icon": "<token_icon>", "token_reference": "<token_reference>", "nft_instance_name": "<nft_instance_name>", "nft_instance_description": "<nft_instance_description>", "nft_instance_media_url": "<nft_instance_media_url>"}'
 ```
 
 ### NEP-141 interface

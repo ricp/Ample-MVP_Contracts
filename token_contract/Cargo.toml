@@ -1,15 +1,12 @@
 [package]
-name = "share_nft_token"
+name = "token_contract"
 version = "1.0.0"
-authors = ["jack the dev <joao@hackachain.io>"]
+authors = ["vote for pedro"]
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-near-sdk = "4.0.0"
 near-contract-standards = "4.0.0"
-
-[dev-dependencies]
-rstest = "0.15.0"
+near-sdk = "4.0.0"
