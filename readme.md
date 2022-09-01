@@ -80,3 +80,9 @@ near call <deploy_account_id> claim_rewards --accountId <user_account> --deposit
 ```
 
 * Note that to withdraw tokens your account must be registered in the <reward_token> contract. For more information check out the NEP-141 [documentation](https://nomicon.io/Standards/Tokens/FungibleToken/Core)
+
+near deploy --accountId test_ample_usdc.testnet --wasmFile target/wasm32-unknown-unknown/release/token_contract.wasm --initFunction new --initArgs '{"owner_id": "test_ample_owner.testnet", "total_supply": "1000000000000000", "metadata": {"spec": "ft-1.0.0","name": "Tether USD","symbol": "USDT","icon": "",  "decimals": 6}}'
+
+near deploy --accountId test_ample_contract.testnet --wasmFile target/wasm32-unknown-unknown/release/share_nft_token.wasm --initFunction new --initArgs '{"owner_id": "test_ample_owner.testnet", "total_supply": "10000", "reward_token": "test_ample_usdc", "token_name": "AMPLE", "token_symbol": "AMPL", "token_icon": "", "token_reference": "", "nft_instance_name": "Tarantino move", "nft_instance_description": "Intellectual property rights over a Tarantino movie", "nft_instance_media_url": "https://www.indiewire.com/wp-content/uploads/2016/10/pulp-fiction-poster.jpg?w=690"}'
+
+richard007.testnet

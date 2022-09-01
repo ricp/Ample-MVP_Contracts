@@ -88,7 +88,7 @@ impl StorageManagement for Contract {
         let rewards = rewards.unwrap();
 
         assert_eq!(
-            rewards.rewards_balance,
+            rewards.rewards_balance_token,
             U128(0),
             "Account still has rewards to withdraw"
         );

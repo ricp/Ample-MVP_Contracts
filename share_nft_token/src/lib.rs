@@ -68,10 +68,12 @@ pub struct Contract {
     /// the token contract.
     pub reward_token: AccountId,
     /// All time count of reward tokens received
-    pub reward_tokens_all_time_count: U128,
+    pub reward_tokens_all_time_count_token: U128,
+    pub reward_tokens_all_time_count_near: U128,
     /// Revenue per share counter. part of the [scalable reward
     /// distribution algorithm](http://batog.info/papers/scalable-reward-distribution.pdf)
-    pub contract_rps: U128,
+    pub contract_rps_token: U128,
+    pub contract_rps_near: U128,
     /// Revenue per share claimed by each individual account
     /// up to its latest interaction. part of the [scalable reward
     /// distribution algorithm](http://batog.info/papers/scalable-reward-distribution.pdf)
@@ -125,7 +127,7 @@ impl Contract {
         assert!(!env::state_exists(), "Already initialized");
         let token_metadata = FungibleTokenMetadata {
             spec: "ft-1.0.0".to_string(),
-            name: format!("{}-token", token_name.clone()),
+            name: format!("{} Token", token_name.clone()),
             symbol: token_symbol.clone(),
             icon: token_icon.clone(),
             reference: Some(token_reference.clone()),
@@ -134,7 +136,7 @@ impl Contract {
         };
         let nft_contract_metadata = NFTContractMetadata {
             spec: "nft-1.0.0".to_string(),
-            name: format!("{}-nft", token_name.clone()),
+            name: format!("{} NFT", token_name.clone()),
             symbol: token_symbol,
             icon: token_icon,
             base_uri: None,
@@ -150,8 +152,10 @@ impl Contract {
         let mut this = Self {
             ft_functionality: FungibleToken::new(StorageKey::FungibleToken),
             reward_token,
-            reward_tokens_all_time_count: U128(0),
-            contract_rps: U128(0),
+            reward_tokens_all_time_count_token: U128(0),
+            reward_tokens_all_time_count_near: U128(0),
+            contract_rps_token: U128(0),
+            contract_rps_near: U128(0),
             accounts_rps: LookupMap::new(StorageKey::AccontRps),
             token_metadata: LazyOption::new(
                 StorageKey::FungibleTokenMetadata,
@@ -194,14 +198,14 @@ impl Contract {
     /// if user has rewards to receive, credit them to user's
     /// RpsManager and update's account_rps to contract_rps' value
     pub fn update_user_rps(&mut self, account_id: &AccountId) {
-        let mut user_rps = self
-            .accounts_rps
-            .get(account_id)
-            .unwrap_or(RpsManager::new(self.contract_rps.0));
+        let mut user_rps = self.accounts_rps.get(account_id).unwrap_or(RpsManager::new(
+            self.contract_rps_token.0,
+            self.contract_rps_near.0,
+        ));
 
         let user_balance = self.ft_functionality.ft_balance_of(account_id.clone());
 
-        user_rps.update_rps(self.contract_rps.0, user_balance.0);
+        user_rps.update_rps(self.contract_rps_token.0, self.contract_rps_near.0, user_balance.0);
 
         self.accounts_rps.insert(account_id, &user_rps);
     }
@@ -209,14 +213,14 @@ impl Contract {
     /// Updates user's rewards balance with current contract_rps and then
     /// zeroes it, returns total amount of rewards that must be transferred
     /// to user.
-    pub fn withdraw_rewards(&mut self, account_id: &AccountId) -> U128 {
-        let mut user_rps = self
-            .accounts_rps
-            .get(account_id)
-            .unwrap_or(RpsManager::new(self.contract_rps.0));
+    pub fn withdraw_rewards(&mut self, account_id: &AccountId) -> (U128, U128) {
+        let mut user_rps = self.accounts_rps.get(account_id).unwrap_or(RpsManager::new(
+            self.contract_rps_token.0,
+            self.contract_rps_near.0,
+        ));
 
         let user_balance = self.ft_functionality.ft_balance_of(account_id.clone());
-        user_rps.update_rps(self.contract_rps.0, user_balance.0);
+        user_rps.update_rps(self.contract_rps_token.0, self.contract_rps_near.0, user_balance.0);
 
         let reward_count = user_rps.withdraw_rewards();
         self.accounts_rps.insert(account_id, &user_rps);
@@ -227,11 +231,11 @@ impl Contract {
     /// token transfer fails and the user's internal balance must be
     /// reconstituted.
     pub fn rollback_withdraw_reward(&mut self, account_id: &AccountId, amount: u128) {
-        let mut user_rps = self
-            .accounts_rps
-            .get(account_id)
-            .unwrap_or(RpsManager::new(self.contract_rps.0));
-        user_rps.rewards_balance = U128(user_rps.rewards_balance.0 + amount);
+        let mut user_rps = self.accounts_rps.get(account_id).unwrap_or(RpsManager::new(
+            self.contract_rps_token.0,
+            self.contract_rps_near.0,
+        ));
+        user_rps.rewards_balance_token = U128(user_rps.rewards_balance_token.0 + amount);
         self.accounts_rps.insert(account_id, &user_rps);
     }
 
@@ -283,7 +287,7 @@ mod tests {
     pub use near_sdk::serde_json::{self, json};
     pub use near_sdk::test_utils::{get_created_receipts, get_logs};
     pub use near_sdk::{testing_env, Balance, Gas, MockedBlockchain, VMContext};
-    pub use near_sdk::{RuntimeFeesConfig, VMConfig, PromiseResult};
+    pub use near_sdk::{PromiseResult, RuntimeFeesConfig, VMConfig};
 
     pub use rstest::{fixture, rstest};
 
@@ -369,8 +373,10 @@ mod tests {
         let mut this = Contract {
             ft_functionality: FungibleToken::new(hash1),
             reward_token: REWARDS_TOKEN_ACCOUNT.parse().unwrap(),
-            reward_tokens_all_time_count: U128(0),
-            contract_rps: U128(0),
+            reward_tokens_all_time_count_token: U128(0),
+            reward_tokens_all_time_count_near: U128(0),
+            contract_rps_token: U128(0),
+            contract_rps_near: U128(0),
             accounts_rps: LookupMap::new(hash2),
             token_metadata: LazyOption::new(hash3, Some(&token_metadata)),
             nft_contract_metadata: LazyOption::new(hash4, Some(&nft_contract_metadata)),
@@ -396,7 +402,7 @@ mod tests {
             .ft_functionality
             .internal_deposit(user, token_balance);
         let mut internal_rps = contract.accounts_rps.get(user).unwrap();
-        internal_rps.rewards_balance = U128(rewards_balance);
+        internal_rps.rewards_balance_token = U128(rewards_balance);
         contract.accounts_rps.insert(user, &internal_rps);
     }
 

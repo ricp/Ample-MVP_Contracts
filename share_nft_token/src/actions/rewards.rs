@@ -15,21 +15,25 @@ impl Contract {
         let account_id = env::predecessor_account_id();
         let withdraw_value = self.withdraw_rewards(&account_id);
 
-        if withdraw_value == U128(0) {
+        let promise1 = if withdraw_value.0 == U128(0) {
             PromiseOrValue::Value(false)
         } else {
             PromiseOrValue::Promise(
                 ext_ft::ext(self.reward_token.clone())
                     .with_static_gas(FT_TRANSFER_GAS)
                     .with_attached_deposit(1)
-                    .ft_transfer(account_id.clone(), withdraw_value, None)
+                    .ft_transfer(account_id.clone(), withdraw_value.0, None)
                     .then(
                         ext_self::ext(env::current_account_id())
                             .with_static_gas(REWARD_WITHDRAW_CALLBACK_GAS)
-                            .resolve_reward_transfer(account_id, withdraw_value),
+                            .resolve_reward_transfer(account_id.clone(), withdraw_value.0),
                     ),
             )
+        };
+        if withdraw_value.1 > U128(0) {
+            Promise::new(account_id).transfer(withdraw_value.1.0);
         }
+        promise1
     }
 
     #[private]
@@ -43,12 +47,19 @@ impl Contract {
         let mut user_rps = self
             .accounts_rps
             .get(&account_id)
-            .unwrap_or(RpsManager::new(self.contract_rps.0));
+            .unwrap_or(RpsManager::new(
+                self.contract_rps_token.0,
+                self.contract_rps_near.0,
+            ));
 
         let user_balance = self.ft_functionality.ft_balance_of(account_id.clone());
 
-        user_rps.update_rps(self.contract_rps.0, user_balance.0);
-        user_rps.rewards_balance
+        user_rps.update_rps(
+            self.contract_rps_token.0,
+            self.contract_rps_near.0,
+            user_balance.0,
+        );
+        user_rps.rewards_balance_token
     }
 }
 
@@ -88,7 +99,12 @@ mod tests {
 
         // perform assertions
         assert_eq!(
-            contract.accounts_rps.get(&user).unwrap().rewards_balance.0,
+            contract
+                .accounts_rps
+                .get(&user)
+                .unwrap()
+                .rewards_balance_token
+                .0,
             0
         );
 
@@ -157,36 +173,46 @@ mod tests {
     ) {
         // setup
         let context = get_context(vec![], 0, 0, caller, 0, Gas(50u64 * 10u64.pow(12)));
-        
+
         let promise_result = if promise_success {
             PromiseResult::Successful(vec![])
         } else {
             PromiseResult::Failed
         };
-        
+
         testing_env!(
             context,
             VMConfig::test(),
             RuntimeFeesConfig::test(),
             HashMap::default(),
             vec![promise_result]
-          );
+        );
         let user = USER_ACCOUNT.parse().unwrap();
         let mut contract = init_contract(1);
         register_user(&mut contract, &user, 100, 0);
 
         // call tested method
         contract.resolve_reward_transfer(user.clone(), U128(transferred_balance));
-    
+
         // make assertions
         if promise_success {
             assert_eq!(
-                contract.accounts_rps.get(&user).unwrap().rewards_balance.0,
+                contract
+                    .accounts_rps
+                    .get(&user)
+                    .unwrap()
+                    .rewards_balance_token
+                    .0,
                 0
             );
         } else {
             assert_eq!(
-                contract.accounts_rps.get(&user).unwrap().rewards_balance.0,
+                contract
+                    .accounts_rps
+                    .get(&user)
+                    .unwrap()
+                    .rewards_balance_token
+                    .0,
                 transferred_balance
             );
         }

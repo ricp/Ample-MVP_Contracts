@@ -7,6 +7,15 @@ use crate::*;
 
 #[near_bindgen]
 impl Contract {
+    /// Allows the transfer of NEAR rewards to the contract and its immediate
+    /// distribution among share owners in the proportion of their ownership
+    #[payable]
+    pub fn near_deposit_rewards(&mut self) {
+        let total_reward_near = self.reward_tokens_all_time_count_near.0 + env::attached_deposit();
+        self.reward_tokens_all_time_count_near = U128(total_reward_near);
+        self.contract_rps_near = U128(total_reward_near / self.ft_functionality.ft_total_supply().0)
+    }
+
     /// Allows the transfer of the reward token to the contract and its immediate
     /// distribution among share owners in the proportion of their ownership
     #[allow(unused_variables)]
@@ -20,9 +29,9 @@ impl Contract {
 
         match msg.as_str() {
             "deposit_profits" => {
-                let total_reward_tokens = self.reward_tokens_all_time_count.0 + amount.0;
-                self.reward_tokens_all_time_count = U128(total_reward_tokens);
-                self.contract_rps =
+                let total_reward_tokens = self.reward_tokens_all_time_count_token.0 + amount.0;
+                self.reward_tokens_all_time_count_token = U128(total_reward_tokens);
+                self.contract_rps_token =
                     U128(total_reward_tokens / self.ft_functionality.ft_total_supply().0);
                 U128(0)
             }
@@ -67,9 +76,9 @@ mod tests {
             .get(&OWNER_ACCOUNT.parse::<AccountId>().unwrap())
             .unwrap();
 
-        rps_manager.update_rps(contract.contract_rps.0, TOKEN_SUPPLY.0);
+        rps_manager.update_rps(contract.contract_rps_token.0, contract.contract_rps_near.0, TOKEN_SUPPLY.0);
 
-        let rewards_balance = rps_manager.rewards_balance;
+        let rewards_balance = rps_manager.rewards_balance_token;
 
         if deposit_value >= TOKEN_SUPPLY.0 {
             assert_eq!(rewards_balance, TOKEN_SUPPLY);
