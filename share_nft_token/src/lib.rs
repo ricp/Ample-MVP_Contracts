@@ -55,7 +55,7 @@ use rps_manager::RpsManager;
 /// 2 bytes for each UTF8 char in account ID (LookupMaps in
 /// ft_functionality and accounts_rps), which amounts to
 /// 282 bytes. Consider 300 to give a 10% wiggle room.
-const STORAGE_BYTES_PER_USER: u64 = 300;
+const STORAGE_BYTES_PER_USER: u64 = 400;
 
 #[near_bindgen]
 #[derive(PanicOnDefault, BorshDeserialize, BorshSerialize)]

@@ -23,7 +23,14 @@ The setup is default mainnet, but you can also change it back to testnet.
 You also need a compatible rust setup as described in the near-sdk library requirements [described here](https://github.com/near/near-sdk-rs).
 
 ### Compile the contract 
-First deployment step is compiling the contract code. You need to run:
+First deployment step is compiling the contract code. 
+
+You need to add the wasm32-unknown-unknown target to your rust toolchain:
+```
+rustup target add wasm32-unknown-unknown
+```
+
+Then compile the code by running:
 ```
 RUSTFLAGS='-C link-arg=-s' cargo build --target wasm32-unknown-unknown --release
 ``` 
@@ -63,13 +70,13 @@ Any account can distribute dividends to all token holders by transferring the <r
 - depositor -> account that wants to pay for dividends being distributed
 
 ```
-near call <reward_token> ft_transfer_call '{"receiver_id": "<deploy_account_id>", "amount": "<amount>", "msg": "deposit_profits"}' --accountId <depositor> --depositYocto 1
+near call <reward_token> ft_transfer_call '{"receiver_id": "<deploy_account_id>", "amount": "<amount>", "msg": "deposit_profits"}' --accountId <depositor> --depositYocto 1 --gas 300000000000000
 ```
 
 Any account can also distribute dividends to all token holders by transferring NEAR to this contract using the following CLI command:
 
 ```
-near call <reward_token> near_deposit_rewards '{}' --accountId <depositor> --depositYocto <amount>
+near call <deploy_account_id> near_deposit_rewards '{}' --accountId <depositor> --deposit <amount>
 ```
 
 ### Withdraw dividends
@@ -83,7 +90,7 @@ near view <deploy_account_id> view_claimable_rewards '{"account_id": "<user_acco
 
 To withdraw your received rewards:
 ```
-near call <deploy_account_id> claim_rewards --accountId <user_account> --depositYocto 1
+near call <deploy_account_id> claim_rewards --accountId <user_account> --depositYocto 1 --gas 300000000000000
 ```
 
 * Note that to withdraw tokens your account must be registered in the <reward_token> contract. For more information check out the NEP-141 [documentation](https://nomicon.io/Standards/Tokens/FungibleToken/Core)
