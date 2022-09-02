@@ -13,7 +13,7 @@ impl Contract {
     pub fn near_deposit_rewards(&mut self) {
         let total_reward_near = self.reward_tokens_all_time_count_near.0 + env::attached_deposit();
         self.reward_tokens_all_time_count_near = U128(total_reward_near);
-        self.contract_rps_near = U128(total_reward_near / self.ft_functionality.ft_total_supply().0)
+        self.contract_rps_near = U128(total_reward_near / self.ft_functionality.ft_total_supply().0);
     }
 
     /// Allows the transfer of the reward token to the contract and its immediate
@@ -45,6 +45,40 @@ mod tests {
 
     use super::*;
     use crate::tests::*;
+
+    #[rstest]
+    /// Test near_deposit_rewards method
+    /// ASSERT:
+    /// (1) If deposited amount cannot be divided by total
+    ///     supply of share tokens, don't immediatelly distribute
+    #[case(REWARDS_TOKEN_ACCOUNT.parse().unwrap(), TOKEN_SUPPLY.0 - 1)]
+    /// (2) Tokens get proportionally distributed between all holders
+    #[case(REWARDS_TOKEN_ACCOUNT.parse().unwrap(), TOKEN_SUPPLY.0)]
+    fn test_near_deposit_rewards(#[case] predecessor: AccountId, #[case] deposit_value: u128) {
+        // setup
+        let context = get_context(vec![], deposit_value, 0, predecessor, 0, Gas(200u64 * 10u64.pow(12)));
+        testing_env!(context);
+        let mut contract = init_contract(1);
+
+        // call tested method
+        contract.near_deposit_rewards();
+
+        // perform assertions
+        let mut rps_manager = contract
+            .accounts_rps
+            .get(&OWNER_ACCOUNT.parse::<AccountId>().unwrap())
+            .unwrap();
+
+        rps_manager.update_rps(contract.contract_rps_token.0, contract.contract_rps_near.0, TOKEN_SUPPLY.0);
+
+        let rewards_balance = rps_manager.rewards_balance_near;
+
+        if deposit_value >= TOKEN_SUPPLY.0 {
+            assert_eq!(rewards_balance, TOKEN_SUPPLY);
+        } else {
+            assert_eq!(rewards_balance.0, 0);
+        }
+    }
 
     #[rstest]
     /// Test ft_on_transfer method

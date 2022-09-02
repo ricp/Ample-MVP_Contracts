@@ -394,7 +394,8 @@ mod tests {
         contract: &mut Contract,
         user: &AccountId,
         token_balance: u128,
-        rewards_balance: u128,
+        rewards_balance_token: u128,
+        rewards_balance_near: u128,
     ) {
         contract.update_user_rps(user);
         contract.ft_functionality.internal_register_account(user);
@@ -402,7 +403,8 @@ mod tests {
             .ft_functionality
             .internal_deposit(user, token_balance);
         let mut internal_rps = contract.accounts_rps.get(user).unwrap();
-        internal_rps.rewards_balance_token = U128(rewards_balance);
+        internal_rps.rewards_balance_token = U128(rewards_balance_token);
+        internal_rps.rewards_balance_near = U128(rewards_balance_near);
         contract.accounts_rps.insert(user, &internal_rps);
     }
 

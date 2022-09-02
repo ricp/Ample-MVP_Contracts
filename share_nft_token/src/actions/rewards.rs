@@ -3,6 +3,8 @@
 //! Allows users to claim their received rewards or
 //! check their current reward amount
 
+use std::collections::HashMap;
+
 use crate::ext_interface::{ext_ft, ext_self, FT_TRANSFER_GAS, REWARD_WITHDRAW_CALLBACK_GAS};
 use crate::*;
 use near_sdk::is_promise_success;
@@ -43,7 +45,7 @@ impl Contract {
         }
     }
 
-    pub fn view_claimable_rewards(&self, account_id: AccountId) -> U128 {
+    pub fn view_claimable_rewards(&self, account_id: AccountId) -> HashMap<String, U128> {
         let mut user_rps = self
             .accounts_rps
             .get(&account_id)
@@ -59,7 +61,11 @@ impl Contract {
             self.contract_rps_near.0,
             user_balance.0,
         );
-        user_rps.rewards_balance_token
+
+        let mut hashmap = HashMap::new();
+        hashmap.insert(self.reward_token.to_string(), user_rps.rewards_balance_token);
+        hashmap.insert("NEAR".to_string(), user_rps.rewards_balance_near);
+        hashmap
     }
 }
 
@@ -74,17 +80,19 @@ mod tests {
     /// ASSERT:
     /// (1) Call requires 1 yocto
     #[should_panic = "Requires attached deposit of exactly 1 yoctoNEAR"]
-    #[case(0, 0)]
+    #[case(0, 0, 0)]
     /// (2) Changes caller internal reward balance to 0
     /// (3) Emits promise with callback in case there are
     ///     rewards to withdraw
-    #[case(1, 10)]
-    fn test_claim_rewards(#[case] deposit: u128, #[case] internal_balance: u128) {
+    #[case(1, 10, 10)]
+    #[case(1, 0, 10)]
+    #[case(1, 10, 0)]
+    fn test_claim_rewards(#[case] deposit: u128, #[case] internal_balance_token: u128, #[case] internal_balance_near: u128) {
         // setup
         let context = get_context(
             vec![],
             deposit,
-            0,
+            internal_balance_near,
             USER_ACCOUNT.parse().unwrap(),
             0,
             Gas(300u64 * 10u64.pow(12)),
@@ -92,7 +100,7 @@ mod tests {
         testing_env!(context);
         let user = USER_ACCOUNT.parse().unwrap();
         let mut contract = init_contract(1);
-        register_user(&mut contract, &user, 100, internal_balance);
+        register_user(&mut contract, &user, 100, internal_balance_token, internal_balance_near);
 
         // call tested method
         contract.claim_rewards();
@@ -108,50 +116,80 @@ mod tests {
             0
         );
 
-        if internal_balance > 0 {
-            let receipts = get_created_receipts();
-            assert_eq!(receipts.len(), 2);
+        let total_receipt_len: usize;
+        if internal_balance_token > 0 && internal_balance_near > 0 {
+            total_receipt_len = 3;
+        } else if internal_balance_token > 0 {
+            total_receipt_len = 2;
+        } else if internal_balance_near > 0 {
+            total_receipt_len = 1;
+        } else {
+            total_receipt_len = 0;
+        };
 
-            assert_eq!(receipts[0].receiver_id, contract.reward_token.clone());
-            assert_eq!(receipts[0].actions.len(), 1);
+        let receipts = get_created_receipts();
+        assert_eq!(receipts.len(), total_receipt_len);
+
+        if internal_balance_token > 0 {
+            let receipt_index = if internal_balance_near == 0 {0} else {1};
+            
+            assert_eq!(receipts[receipt_index].receiver_id, contract.reward_token.clone());
+            assert_eq!(receipts[receipt_index].actions.len(), 1);
 
             if let VmAction::FunctionCall {
                 function_name,
                 args,
                 gas: _,
                 deposit,
-            } = receipts[0].actions[0].clone()
+            } = receipts[receipt_index].actions[0].clone()
             {
                 assert_eq!(function_name, "ft_transfer");
                 assert_eq!(deposit, 1);
                 let json_args: serde_json::Value =
                     serde_json::from_str(from_utf8(&args).unwrap()).unwrap();
                 assert_eq!(json_args["receiver_id"], user.to_string());
-                assert_eq!(json_args["amount"], internal_balance.to_string());
+                assert_eq!(json_args["amount"], internal_balance_token.to_string());
             } else {
                 panic!()
             };
 
-            assert_eq!(receipts[1].receiver_id, CONTRACT_ACCOUNT.parse().unwrap());
-            assert_eq!(receipts[1].actions.len(), 1);
+            assert_eq!(receipts[receipt_index + 1].receiver_id, CONTRACT_ACCOUNT.parse().unwrap());
+            assert_eq!(receipts[receipt_index + 1].actions.len(), 1);
 
             if let VmAction::FunctionCall {
                 function_name,
                 args,
                 gas: _,
                 deposit,
-            } = receipts[1].actions[0].clone()
+            } = receipts[receipt_index + 1].actions[0].clone()
             {
                 assert_eq!(function_name, "resolve_reward_transfer");
                 assert_eq!(deposit, 0);
                 let json_args: serde_json::Value =
                     serde_json::from_str(from_utf8(&args).unwrap()).unwrap();
                 assert_eq!(json_args["receiver_id"], user.to_string());
-                assert_eq!(json_args["amount"], internal_balance.to_string());
+                assert_eq!(json_args["amount"], internal_balance_token.to_string());
             } else {
                 panic!()
             };
         }
+        
+        if internal_balance_near > 0 {
+            let receipt_index = 0;
+
+            assert_eq!(receipts[receipt_index].receiver_id, USER_ACCOUNT.parse().unwrap());
+            assert_eq!(receipts[receipt_index].actions.len(), 1);
+
+            if let VmAction::Transfer {
+                deposit,
+            } = receipts[receipt_index].actions[0].clone()
+            {
+                assert_eq!(deposit, internal_balance_near);
+            } else {
+                panic!()
+            };
+        }
+    
     }
 
     #[rstest]
@@ -189,7 +227,7 @@ mod tests {
         );
         let user = USER_ACCOUNT.parse().unwrap();
         let mut contract = init_contract(1);
-        register_user(&mut contract, &user, 100, 0);
+        register_user(&mut contract, &user, 100, 0, 0);
 
         // call tested method
         contract.resolve_reward_transfer(user.clone(), U128(transferred_balance));

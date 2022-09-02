@@ -41,7 +41,7 @@ impl RpsManager {
         let new_rewards_near = user_token_balance * rps_diff_near;
         self.account_rps_near = U128(contract_rps_near);
         self.rewards_received_near = U128(self.rewards_received_near.0 + new_rewards_near);
-        self.rewards_balance_near = U128(self.rewards_received_near.0 + new_rewards_near);
+        self.rewards_balance_near = U128(self.rewards_balance_near.0 + new_rewards_near);
     }
 
     /// Zeros the account's reward balance and returns its value
