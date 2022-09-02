@@ -2,6 +2,7 @@ use std::path::Path;
 use workspaces::{Contract, Account, DevNetwork, Worker};
 use workspaces::network::Sandbox;
 use std::vec::Vec;
+use std::collections::HashMap;
 use std::io::Error;
 use serde_json::json;
 use near_units::parse_near;

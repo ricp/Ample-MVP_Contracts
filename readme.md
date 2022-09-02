@@ -5,6 +5,7 @@ This contract is implemented as a NEP-141 (fungible token standard) compliant to
 dividends to all its holders in the proportion of their ownership.  
 Besides that, the contract also implements NEP-171 (NFT standard) so that the ownership of share tokens
 also shows up as an NFT in the owner's NEAR wallet.  
+Rewards can be distributed both in NEAR and a selected NEP-141 token. 
 
 ## Deployment
 
@@ -56,13 +57,19 @@ After deployment the <total_supply> is going to be entirelly transferred to <own
 The contract only implements the NEP-171 view methods, which are necessary for displaying the tokens to the owner as a NFT in their NEAR wallet and other web3 applications. All change methods available in NEP-171 produce no effect in this contract. The full NEP-171 interface is available [here](https://nomicon.io/Standards/Tokens/NonFungibleToken/)
 
 ### Distribute dividends
-Anyone account can distribute dividends to all token holders by transferring the <reward_token> to this contract using the following CLI command:
+Any account can distribute dividends to all token holders by transferring the <reward_token> to this contract using the following CLI command:
 
 - amount -> amount of tokens that you want to distribute as dividends
 - depositor -> account that wants to pay for dividends being distributed
 
 ```
 near call <reward_token> ft_transfer_call '{"receiver_id": "<deploy_account_id>", "amount": "<amount>", "msg": "deposit_profits"}' --accountId <depositor> --depositYocto 1
+```
+
+Any account can also distribute dividends to all token holders by transferring NEAR to this contract using the following CLI command:
+
+```
+near call <reward_token> near_deposit_rewards '{}' --accountId <depositor> --depositYocto <amount>
 ```
 
 ### Withdraw dividends
@@ -80,9 +87,3 @@ near call <deploy_account_id> claim_rewards --accountId <user_account> --deposit
 ```
 
 * Note that to withdraw tokens your account must be registered in the <reward_token> contract. For more information check out the NEP-141 [documentation](https://nomicon.io/Standards/Tokens/FungibleToken/Core)
-
-near deploy --accountId test_ample_usdc.testnet --wasmFile target/wasm32-unknown-unknown/release/token_contract.wasm --initFunction new --initArgs '{"owner_id": "test_ample_owner.testnet", "total_supply": "1000000000000000", "metadata": {"spec": "ft-1.0.0","name": "Tether USD","symbol": "USDT","icon": "",  "decimals": 6}}'
-
-near deploy --accountId test_ample_contract.testnet --wasmFile target/wasm32-unknown-unknown/release/share_nft_token.wasm --initFunction new --initArgs '{"owner_id": "test_ample_owner.testnet", "total_supply": "10000", "reward_token": "test_ample_usdc", "token_name": "AMPLE", "token_symbol": "AMPL", "token_icon": "", "token_reference": "", "nft_instance_name": "Tarantino move", "nft_instance_description": "Intellectual property rights over a Tarantino movie", "nft_instance_media_url": "https://www.indiewire.com/wp-content/uploads/2016/10/pulp-fiction-poster.jpg?w=690"}'
-
-richard007.testnet

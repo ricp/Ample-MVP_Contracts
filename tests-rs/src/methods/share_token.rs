@@ -16,11 +16,28 @@ pub async fn claim_rewards(
   anyhow::Ok(())
 }
 
+pub async fn near_deposit_rewards(
+  worker: &Worker<Sandbox>,
+  sender: &Account,
+  contract: &Contract,
+  deposit: u128,
+  
+) -> anyhow::Result<()> {
+  sender
+    .call(&worker, contract.id(), "near_deposit_rewards")
+    .args_json(json!({}))?
+    .deposit(deposit)
+    .gas(GAS_LIMIT)
+    .transact()
+    .await?;
+  anyhow::Ok(())
+}
+
 pub async fn view_claimable_rewards(
   worker: &Worker<Sandbox>,
   contract: &Contract,
   account: &Account,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<HashMap<String, String>> {
   anyhow::Ok(
     contract
       .view(

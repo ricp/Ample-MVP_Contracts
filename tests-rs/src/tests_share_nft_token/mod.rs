@@ -74,32 +74,59 @@ mod tests {
     ft_transfer(&worker, &owner, &share_token, &user, user_share_balance).await?;
     ft_transfer(&worker, &owner, &share_token, &user2, user_share_balance).await?;
 
+    let near_transfer_size: u128 = 1_000_000;
+
+
     // 4. Distribute rewards
 
     ft_transfer_call(&worker, &user, &ft_token, share_token.as_account(), user_ft_balance, "deposit_profits".to_string()).await?;
+    near_deposit_rewards(&worker, &user, &share_token, near_transfer_size).await?;
 
-    let user1_profits = view_claimable_rewards(&worker, &share_token, &user).await?.parse::<u128>().unwrap();
-    let user2_profits = view_claimable_rewards(&worker, &share_token, &user2).await?.parse::<u128>().unwrap();
-    let owner_profits = view_claimable_rewards(&worker, &share_token, &owner).await?.parse::<u128>().unwrap();
+    let user1_profits_token = view_claimable_rewards(&worker, &share_token, &user).await?.get(&ft_token.id().to_string()).unwrap().parse::<u128>().unwrap();
+    let user2_profits_token = view_claimable_rewards(&worker, &share_token, &user2).await?.get(&ft_token.id().to_string()).unwrap().parse::<u128>().unwrap();
+    let owner_profits_token = view_claimable_rewards(&worker, &share_token, &owner).await?.get(&ft_token.id().to_string()).unwrap().parse::<u128>().unwrap();
 
-    assert_eq!(user1_profits, (user_ft_balance * user_share_balance ) / share_token_supply);
-    assert_eq!(user2_profits, (user_ft_balance * user_share_balance ) / share_token_supply);
-    assert_eq!(owner_profits, (user_ft_balance * owner_share_balance ) / share_token_supply);
+    assert_eq!(user1_profits_token, (user_ft_balance * user_share_balance ) / share_token_supply);
+    assert_eq!(user2_profits_token, (user_ft_balance * user_share_balance ) / share_token_supply);
+    assert_eq!(owner_profits_token, (user_ft_balance * owner_share_balance ) / share_token_supply);
+
+    let user1_profits_near = view_claimable_rewards(&worker, &share_token, &user).await?.get(&"NEAR".to_string()).unwrap().parse::<u128>().unwrap();
+    let user2_profits_near = view_claimable_rewards(&worker, &share_token, &user2).await?.get(&"NEAR".to_string()).unwrap().parse::<u128>().unwrap();
+    let owner_profits_near = view_claimable_rewards(&worker, &share_token, &owner).await?.get(&"NEAR".to_string()).unwrap().parse::<u128>().unwrap();
+
+    assert_eq!(user1_profits_near, (near_transfer_size * user_share_balance ) / share_token_supply);
+    assert_eq!(user2_profits_near, (near_transfer_size * user_share_balance ) / share_token_supply);
+    assert_eq!(owner_profits_near, (near_transfer_size * owner_share_balance ) / share_token_supply);
 
     ft_transfer_call(&worker, &user2, &ft_token, share_token.as_account(), user_ft_balance, "deposit_profits".to_string()).await?;
+    near_deposit_rewards(&worker, &user, &share_token, near_transfer_size).await?;
 
-    let user1_profits = view_claimable_rewards(&worker, &share_token, &user).await?.parse::<u128>().unwrap();
-    let user2_profits = view_claimable_rewards(&worker, &share_token, &user2).await?.parse::<u128>().unwrap();
-    let owner_profits = view_claimable_rewards(&worker, &share_token, &owner).await?.parse::<u128>().unwrap();
+    let user1_profits_token = view_claimable_rewards(&worker, &share_token, &user).await?.get(&ft_token.id().to_string()).unwrap().parse::<u128>().unwrap();
+    let user2_profits_token = view_claimable_rewards(&worker, &share_token, &user2).await?.get(&ft_token.id().to_string()).unwrap().parse::<u128>().unwrap();
+    let owner_profits_token = view_claimable_rewards(&worker, &share_token, &owner).await?.get(&ft_token.id().to_string()).unwrap().parse::<u128>().unwrap();
 
-    assert_eq!(user1_profits, (user_ft_balance * 2 * user_share_balance ) / share_token_supply);
-    assert_eq!(user2_profits, (user_ft_balance * 2 * user_share_balance ) / share_token_supply);
-    assert_eq!(owner_profits, (user_ft_balance * 2 * owner_share_balance ) / share_token_supply);
+    assert_eq!(user1_profits_token, (user_ft_balance * 2 * user_share_balance ) / share_token_supply);
+    assert_eq!(user2_profits_token, (user_ft_balance * 2 * user_share_balance ) / share_token_supply);
+    assert_eq!(owner_profits_token, (user_ft_balance * 2 * owner_share_balance ) / share_token_supply);
+
+    let user1_profits_near = view_claimable_rewards(&worker, &share_token, &user).await?.get(&"NEAR".to_string()).unwrap().parse::<u128>().unwrap();
+    let user2_profits_near = view_claimable_rewards(&worker, &share_token, &user2).await?.get(&"NEAR".to_string()).unwrap().parse::<u128>().unwrap();
+    let owner_profits_near = view_claimable_rewards(&worker, &share_token, &owner).await?.get(&"NEAR".to_string()).unwrap().parse::<u128>().unwrap();
+
+    assert_eq!(user1_profits_near, (near_transfer_size * 2 * user_share_balance ) / share_token_supply);
+    assert_eq!(user2_profits_near, (near_transfer_size * 2 * user_share_balance ) / share_token_supply);
+    assert_eq!(owner_profits_near, (near_transfer_size * 2 * owner_share_balance ) / share_token_supply);
 
     // 5. Withdraw rewards
-    let owner_balance_init = ft_balance_of(&worker, &ft_token, &owner).await?.parse::<u128>().unwrap();
-    let user1_balance_init = ft_balance_of(&worker, &ft_token, &user).await?.parse::<u128>().unwrap();
-    let user2_balance_init = ft_balance_of(&worker, &ft_token, &user2).await?.parse::<u128>().unwrap();
+    let owner_balance_token_init = ft_balance_of(&worker, &ft_token, &owner).await?.parse::<u128>().unwrap();
+    let user1_balance_token_init = ft_balance_of(&worker, &ft_token, &user).await?.parse::<u128>().unwrap();
+    let user2_balance_token_init = ft_balance_of(&worker, &ft_token, &user2).await?.parse::<u128>().unwrap();
+
+    // Final balance cannot be asserted given that gas costs
+    // cannot be precised
+    // let owner_balance_near_init = owner.view_account(&worker).await?.balance;
+    // let user1_balance_near_init = user.view_account(&worker).await?.balance;
+    // let user2_balance_near_init = user2.view_account(&worker).await?.balance;
 
     claim_rewards(&worker, &owner, &share_token).await?;
     claim_rewards(&worker, &user, &share_token).await?;
@@ -109,9 +136,21 @@ mod tests {
     let user1_balance_end = ft_balance_of(&worker, &ft_token, &user).await?.parse::<u128>().unwrap();
     let user2_balance_end = ft_balance_of(&worker, &ft_token, &user2).await?.parse::<u128>().unwrap();
       
-    assert_eq!(owner_balance_init + owner_profits, owner_balance_end);
-    assert_eq!(user1_balance_init + user1_profits, user1_balance_end);
-    assert_eq!(user2_balance_init + user2_profits, user2_balance_end);
+    // Final balance cannot be asserted given that gas costs
+    // cannot be precised
+    // let owner_balance_near_end = owner.view_account(&worker).await?.balance;
+    // let user1_balance_near_end = user.view_account(&worker).await?.balance;
+    // let user2_balance_near_end = user2.view_account(&worker).await?.balance;
+
+    assert_eq!(owner_balance_token_init + owner_profits_token, owner_balance_end);
+    assert_eq!(user1_balance_token_init + user1_profits_token, user1_balance_end);
+    assert_eq!(user2_balance_token_init + user2_profits_token, user2_balance_end);
+
+    // Final balance cannot be asserted given that gas costs
+    // cannot be precised
+    // assert_eq!(owner_balance_near_init + owner_profits_near, owner_balance_near_end);
+    // assert_eq!(user1_balance_near_init + user1_profits_near, user1_balance_near_end);
+    // assert_eq!(user2_balance_near_init + user2_profits_near, user2_balance_near_end);
 
     anyhow::Ok(())
   }
